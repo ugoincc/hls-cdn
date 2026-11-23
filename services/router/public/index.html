@@ -1,0 +1,56 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Mini-CDN HLS</title>
+  <link rel="stylesheet" href="/style.css">
+</head>
+<body>
+  <header>
+    <h1>Mini-CDN · streaming adaptativo (HLS)</h1>
+    <span id="session" class="muted"></span>
+  </header>
+
+  <main>
+    <section class="left">
+      <video id="video" controls muted playsinline></video>
+      <div class="controls">
+        <button id="play">▶ Play</button>
+        <span class="muted">Qualidade:</span>
+        <span id="levels"></span>
+      </div>
+
+      <h2>Segmentos recentes <span class="muted small">(cor = edge · contorno tracejado = MISS · ⚠ = failover)</span></h2>
+      <div id="strip"></div>
+
+      <table id="frags">
+        <thead><tr><th>hora</th><th>seg</th><th>nível</th><th>edge</th><th>cache</th><th>tentativas</th><th>TTFB</th><th>total</th><th>KB</th></tr></thead>
+        <tbody></tbody>
+      </table>
+    </section>
+
+    <section class="right">
+      <div class="grid">
+        <div class="metric"><label>Qualidade</label><b id="m-level">–</b></div>
+        <div class="metric"><label>Banda estimada</label><b id="m-bw">–</b></div>
+        <div class="metric"><label>Buffer</label><b id="m-buffer">–</b></div>
+        <div class="metric"><label>Stalls</label><b id="m-stalls">0</b></div>
+        <div class="metric"><label>Tempo travado</label><b id="m-stalltime">0 s</b></div>
+        <div class="metric"><label>Trocas de nível</label><b id="m-switches">0</b></div>
+        <div class="metric"><label>Último edge</label><b id="m-edge">–</b></div>
+        <div class="metric"><label>Último cache</label><b id="m-cache">–</b></div>
+      </div>
+
+      <h2>Edges <span class="muted small">(via /status, 1 s)</span></h2>
+      <div id="edges"></div>
+
+      <h2>Eventos</h2>
+      <ul id="log"></ul>
+    </section>
+  </main>
+
+  <script src="/vendor/hls.min.js"></script>
+  <script src="/app.js"></script>
+</body>
+</html>
