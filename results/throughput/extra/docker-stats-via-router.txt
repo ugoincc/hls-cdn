@@ -1,0 +1,5 @@
+router CPU=158.87%
+edge1 CPU=9.96%
+edge2 CPU=7.18%
+edge3 CPU=6.29%
+origin CPU=0.00%

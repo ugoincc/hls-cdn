@@ -6,7 +6,13 @@ import http from 'node:http';
 import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { fetch, Agent, setGlobalDispatcher } from 'undici';
 import { HashRing } from './hashring.js';
+import { cachedLookup } from './dnscache.js';
+
+// Cliente HTTP com DNS em cache + coalescido (ver dnscache.js: evita que um edge
+// morto esgote o threadpool do libuv e trave as conexões com os edges saudáveis).
+setGlobalDispatcher(new Agent({ connect: { lookup: cachedLookup } }));
 
 const PORT = Number(process.env.PORT ?? 8000);
 const HEALTH_INTERVAL_MS = Number(process.env.HEALTH_INTERVAL_MS ?? 1000);
@@ -110,7 +116,7 @@ async function proxy(req, res, key) {
     } catch (err) {
       // erro de rede/timeout → suspeita passiva; o health check confirma (DOWN) ou absolve (UP)
       edge.failures++;
-      setState(edge, 'SUSPECT', `request_fail: ${err.cause?.code ?? err.name}`);
+      if (edge.state === 'UP') setState(edge, 'SUSPECT', `request_fail: ${err.cause?.code ?? err.name}`);
       tried.push({ edge: edge.id, error: err.cause?.code ?? err.name, ms: +(performance.now() - ta).toFixed(1) });
     }
   }

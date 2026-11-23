@@ -1,0 +1,1 @@
+{"label":"","clients":20,"level":"720p","paced":true,"seconds":60,"requests":600,"ok":600,"errors":0,"reqPerSec":10,"mbps":53.7,"p50":38.4,"p95":74.9,"p99":95.4,"hitRatio":0.91,"failovers":69,"byEdge":{"edge1":269,"edge2":115,"edge3":216}}

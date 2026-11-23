@@ -131,10 +131,17 @@ if (kind === 'failover') {
 if (kind === 'player') {
   const evs = readJsonl(path.join(dir, 'player-events.jsonl'));
   const chaos = readJsonl(path.join(dir, 'chaos-events.jsonl'));
-  const t0 = chaos[0]?.ts ?? Math.min(...evs.map((e) => e.ts));
+  const inj = chaos.find((c) => c.action !== 'reset') ?? chaos[0];
+  const t0 = inj?.ts ?? Math.min(...evs.map((e) => e.ts));
   const rel = (ts) => +((ts - t0) / 1000).toFixed(1);
+  const tMin = Math.min(...evs.map((e) => e.ts)), tMax = Math.max(...evs.map((e) => e.ts));
+  const routerEv = readJsonl(path.join(ROOT, 'results', 'router-events.jsonl')).filter((e) => e.event === 'edge_state' && e.ts >= tMin && e.ts <= tMax);
+  write('router-events.jsonl', routerEv.map((e) => JSON.stringify(e)).join('\n') + '\n');
   const rows = [];
-  for (const c of chaos) rows.push({ 't (s)': rel(c.ts), origem: 'caos', evento: `${c.action} ${c.target} ${c.detail}` });
+  for (const c of chaos) if (c.action !== 'reset') rows.push({ 't (s)': rel(c.ts), origem: 'caos', evento: `${c.action} ${c.target} ${c.detail}` });
+  for (const e of routerEv) rows.push({ 't (s)': rel(e.ts), origem: 'router', evento: `${e.edge}: ${e.from} → ${e.to} (${e.reason})` });
+  const clear = chaos.find((c) => c.action === 'netem_clear');
+  const firstSwitchAfter = (ts) => evs.find((e) => e.type === 'level_switched' && e.ts > ts);
   for (const e of evs) {
     if (e.type === 'level_switched') rows.push({ 't (s)': rel(e.ts), origem: 'player', evento: `qualidade → ${e.height}p (banda est. ${Math.round(e.bwEstimate / 1000)} kbps)` });
     if (e.type === 'stall_start') rows.push({ 't (s)': rel(e.ts), origem: 'player', evento: 'STALL início' });
@@ -154,5 +161,14 @@ if (kind === 'player') {
     { métrica: 'tempo total travado', valor: `${stalls.reduce((a, s) => a + s.durationMs, 0)} ms` },
     { métrica: 'tempo de carga do segmento p50 / p95 (ms)', valor: `${pct(frags.map((f) => f.loadMs), 50)} / ${pct(frags.map((f) => f.loadMs), 95)}` },
   ];
+  if (inj?.action === 'netem') {
+    const down = firstSwitchAfter(inj.ts);
+    summary.push({ métrica: 'tempo até baixar a qualidade após limitar a banda', valor: down ? `${((down.ts - inj.ts) / 1000).toFixed(1)} s (→ ${down.height}p)` : '–' });
+    if (clear) {
+      const up = firstSwitchAfter(clear.ts);
+      summary.push({ métrica: 'tempo até subir a qualidade após liberar a banda', valor: up ? `${((up.ts - clear.ts) / 1000).toFixed(1)} s (→ ${up.height}p)` : '–' });
+    }
+    summary.push({ métrica: 'mudanças de estado de edges no router (falsos positivos)', valor: routerEv.length });
+  }
   write('summary.md', `# Experimento: player (${path.basename(dir)})\n\n${mdTable(summary)}\n## Linha do tempo (t=0 na 1ª injeção)\n\n${mdTable(rows)}`);
 }

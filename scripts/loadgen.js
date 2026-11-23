@@ -18,6 +18,7 @@ const { values: o } = parseArgs({
     paced: { type: 'boolean', default: false },
     out: { type: 'string' },
     timeout: { type: 'string', default: '10000' },
+    label: { type: 'string', default: '' },
   },
 });
 const N = Number(o.clients), DUR = Number(o.duration) * 1000, TIMEOUT = Number(o.timeout);
@@ -94,6 +95,7 @@ const hits = ok.filter((r) => r.cache === 'HIT').length;
 const byEdge = {};
 for (const r of ok) byEdge[r.edge] = (byEdge[r.edge] ?? 0) + 1;
 const summary = {
+  label: o.label,
   clients: N, level: o.level, paced: o.paced, seconds: +elapsed.toFixed(1),
   requests: records.length, ok: ok.length, errors: records.length - ok.length,
   reqPerSec: +(records.length / elapsed).toFixed(1),

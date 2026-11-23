@@ -4,7 +4,7 @@ RUN apk add --no-cache iproute2
 WORKDIR /app
 COPY package.json package-lock.json ./
 RUN npm ci --omit=dev
-COPY hashring.js server.js ./
+COPY hashring.js dnscache.js server.js ./
 COPY public/ public/
 # hls.js vendorizado: servido pelo próprio router, sem CDN externa
 RUN mkdir -p public/vendor && cp node_modules/hls.js/dist/hls.min.js public/vendor/

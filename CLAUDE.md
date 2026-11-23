@@ -170,14 +170,14 @@ descrito em `docs/EXPERIMENTOS.md`. Esses arquivos voltam para o Project para vi
 
 ## Plano por etapas
 
-- [ ] 1. Esqueleto: estrutura, `docker-compose.yml`, `origin` com encode ffmpeg funcionando
+- [x] 1. Esqueleto: estrutura, `docker-compose.yml`, `origin` com encode ffmpeg funcionando
       (abrir a master playlist no navegador/`ffplay`).
-- [ ] 2. `edge` com cache LRU + headers + logs; `router` com anel de hashing consistente em
+- [x] 2. `edge` com cache LRU + headers + logs; `router` com anel de hashing consistente em
       modo proxy (sem failover ainda). Vídeo tocando via `http://localhost:8000`.
-- [ ] 3. Player com painel de métricas + `POST /events`.
-- [ ] 4. Health check + failover no router; testar `docker stop edge2` com vídeo tocando.
-- [ ] 5. Scripts de caos (`kill-edge`, `netem`, `partition`, `origin-down`, `reset`).
-- [ ] 6. `loadgen.js` + scripts de experimento + `analyze.js`; rodar experimentos e gerar
+- [x] 3. Player com painel de métricas + `POST /events`.
+- [x] 4. Health check + failover no router; testar `docker stop edge2` com vídeo tocando.
+- [x] 5. Scripts de caos (`kill-edge`, `netem`, `partition`, `origin-down`, `reset`).
+- [x] 6. `loadgen.js` + scripts de experimento + `analyze.js`; rodar experimentos e gerar
       `results/` e `docs/EXPERIMENTOS.md`.
 - [ ] 7. README completo (pré-requisitos, `docker compose up`, roteiro da demo, como rodar
       cada experimento) + `docs/DECISOES.md`.
@@ -191,7 +191,8 @@ relatório e slides no Project (tarde); dia 23 → revisão e entrega.
 ## Convenções
 
 - Node 22+, ESM (`"type": "module"`), `fetch` nativo. Dependências mínimas
-  (permitido: `express` ou `node:http` puro; `hls.js` só no front).
+  (permitido: `express` ou `node:http` puro; `hls.js` só no front; `undici` no router
+  apenas para o `lookup` DNS customizado — ver D7 em `docs/DECISOES.md`).
 - Uma imagem por serviço, base `node:22-alpine` (origin adiciona `ffmpeg`; edge/router
   adicionam `iproute2`).
 - Toda configuração por variável de ambiente com padrão sensato; nada de IP/host fixo no código.
