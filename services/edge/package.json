@@ -1,0 +1,6 @@
+{
+  "name": "cdn-edge",
+  "private": true,
+  "type": "module",
+  "main": "server.js"
+}

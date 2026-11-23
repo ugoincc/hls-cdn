@@ -1,0 +1,62 @@
+# Modo padrão: todos os nós em uma máquina.  docker compose up --build  →  http://localhost:8000
+name: minicdn
+
+x-edge: &edge
+  build: ./services/edge
+  image: minicdn-edge
+  cap_add: [NET_ADMIN] # tc netem (latência/perda/banda)
+  restart: "no"        # queremos ver a queda, não um restart automático
+  networks: [cdn]
+  depends_on: [origin]
+
+services:
+  origin:
+    build:
+      context: ./services/origin
+      args:
+        DURATION: ${VIDEO_DURATION:-180}
+    image: minicdn-origin
+    container_name: origin
+    environment:
+      ORIGIN_DELAY_MS: ${ORIGIN_DELAY_MS:-0}
+    ports: ["8080:8080"]
+    networks: [cdn]
+
+  edge1:
+    <<: *edge
+    container_name: edge1
+    environment: { EDGE_ID: edge1, PORT: 8081, ORIGIN_URL: "http://origin:8080", CACHE_MAX_MB: "${CACHE_MAX_MB:-256}" }
+    ports: ["8081:8081"]
+
+  edge2:
+    <<: *edge
+    container_name: edge2
+    environment: { EDGE_ID: edge2, PORT: 8082, ORIGIN_URL: "http://origin:8080", CACHE_MAX_MB: "${CACHE_MAX_MB:-256}" }
+    ports: ["8082:8082"]
+
+  edge3:
+    <<: *edge
+    container_name: edge3
+    environment: { EDGE_ID: edge3, PORT: 8083, ORIGIN_URL: "http://origin:8080", CACHE_MAX_MB: "${CACHE_MAX_MB:-256}" }
+    ports: ["8083:8083"]
+
+  router:
+    build: ./services/router
+    image: minicdn-router
+    container_name: router
+    cap_add: [NET_ADMIN]
+    environment:
+      EDGES: "edge1=http://edge1:8081,edge2=http://edge2:8082,edge3=http://edge3:8083"
+      HEALTH_INTERVAL_MS: ${HEALTH_INTERVAL_MS:-1000}
+      HEALTH_FAILS: ${HEALTH_FAILS:-2}
+      EDGE_TIMEOUT_MS: ${EDGE_TIMEOUT_MS:-4000}
+      FAILOVER: ${FAILOVER:-on}
+      RESULTS_DIR: /results
+    volumes: ["./results:/results"]
+    ports: ["8000:8000"]
+    networks: [cdn]
+    depends_on: [edge1, edge2, edge3]
+
+networks:
+  cdn:
+    name: minicdn_cdn

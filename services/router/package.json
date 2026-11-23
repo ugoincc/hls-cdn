@@ -1,0 +1,9 @@
+{
+  "name": "cdn-router",
+  "private": true,
+  "type": "module",
+  "main": "server.js",
+  "dependencies": {
+    "hls.js": "1.7.4"
+  }
+}
