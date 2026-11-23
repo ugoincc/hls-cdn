@@ -1,0 +1,6 @@
+node_modules/
+results/**/*.jsonl
+!results/**/summary.md
+*.ts
+*.m3u8
+.DS_Store

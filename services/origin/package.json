@@ -1,0 +1,6 @@
+{
+  "name": "cdn-origin",
+  "private": true,
+  "type": "module",
+  "main": "server.js"
+}
