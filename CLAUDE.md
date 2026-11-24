@@ -179,7 +179,7 @@ descrito em `docs/EXPERIMENTOS.md`. Esses arquivos voltam para o Project para vi
 - [x] 5. Scripts de caos (`kill-edge`, `netem`, `partition`, `origin-down`, `reset`).
 - [x] 6. `loadgen.js` + scripts de experimento + `analyze.js`; rodar experimentos e gerar
       `results/` e `docs/EXPERIMENTOS.md`.
-- [ ] 7. README completo (pré-requisitos, `docker compose up`, roteiro da demo, como rodar
+- [x] 7. README completo (pré-requisitos, `docker compose up`, roteiro da demo, como rodar
       cada experimento) + `docs/DECISOES.md`.
 - [ ] 8. (Bônus) Modo 2 máquinas com o Mac Studio via VPN + túnel SSH; experimento de latência
       e partição real.
