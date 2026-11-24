@@ -58,7 +58,7 @@ docker compose down
 | URL | O quê |
 |---|---|
 | `http://localhost:8000/` | player + painel de métricas |
-| `http://localhost:8000/?buffer=10` | player com buffer de 10 s, que deixa as falhas mais visíveis (padrão: 30 s) |
+| `http://localhost:8000/?buffer=10` | player com buffer de 10 s (o hls.js pode ir até 2×, ~20 s), que deixa as falhas mais visíveis (padrão: 30 s) |
 | `http://localhost:8000/status` | estado do anel e dos edges (JSON) |
 | `http://localhost:808{1,2,3}/stats` | estatísticas de cada edge: hits, misses, hit ratio, bytes |
 | `http://localhost:8080/hls/master.m3u8` | master playlist direto da origem |
@@ -84,8 +84,9 @@ Pré-condição: `docker compose up --build` já rodou. Abra `http://localhost:8
 play. Deixe um terminal na raiz do repositório.
 
 1. **Visão normal (1 min).** O painel mostra a qualidade (1080p), os segmentos coloridos pelo edge
-   que os serviu (cada edge tem uma cor) e o HIT/MISS: os primeiros segmentos são MISS e, ao
-   rever um trecho, viram HIT. Cada segmento tem um dono fixo no anel.
+   que os serviu (cada edge tem uma cor) e o HIT/MISS. Na primeira exibição tudo é MISS. Para
+   mostrar o cache, abra **uma segunda aba** com o mesmo endereço: o segundo espectador recebe os
+   mesmos segmentos como HIT, servidos pelo mesmo edge, porque cada segmento tem um dono fixo no anel.
 
 2. **Queda de um edge (2 min).**
    ```bash
@@ -113,11 +114,14 @@ play. Deixe um terminal na raiz do repositório.
    ```bash
    scripts/chaos/origin-down.sh down
    ```
-   Segmentos que já estão em cache continuam saindo como HIT; os demais devolvem 502. Mostra que
-   o cache é o que sustenta o serviço. Para religar:
+   Os edges continuam `UP` (o router não os culpa) e os segmentos já em cache continuam saindo
+   como HIT. Os novos devolvem 502: o player consome o buffer (~20 s) e trava (`fragLoadError`,
+   stall). Para religar:
    ```bash
    scripts/chaos/origin-down.sh up
    ```
+   O player se recupera sozinho (~10 s depois, pelo backoff de retentativa do hls.js). Mostra que,
+   sem a origem, só o cache sustenta o serviço.
 
 5. **Restaurar tudo.**
    ```bash

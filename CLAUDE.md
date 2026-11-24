@@ -183,7 +183,7 @@ descrito em `docs/EXPERIMENTOS.md`. Esses arquivos voltam para o Project para vi
       cada experimento) + `docs/DECISOES.md`.
 - [ ] 8. (Bônus) Modo 2 máquinas com o Mac Studio via VPN + túnel SSH; experimento de latência
       e partição real.
-- [ ] 9. Ensaio do roteiro da demo (5–10 min) no modo 1.
+- [x] 9. Ensaio do roteiro da demo (5–10 min) no modo 1.
 
 Cronograma: dia 21 → etapas 1–5; dia 22 → 6–7 (manhã), 8 se sobrar tempo, documento,
 relatório e slides no Project (tarde); dia 23 → revisão e entrega.
