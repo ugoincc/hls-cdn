@@ -3,8 +3,9 @@ FROM alpine:3.20 AS encoder
 RUN apk add --no-cache ffmpeg font-dejavu
 ARG DURATION=180
 ENV DURATION=${DURATION}
-COPY encode.sh /encode.sh
-RUN sh /encode.sh /srv/hls
+# input* é opcional: se existir services/origin/input.mp4 (ou .mov/.mkv…), vira a fonte do vídeo
+COPY encode.sh input* /src/
+RUN sh /src/encode.sh /srv/hls
 
 # Estágio 2: imagem final enxuta (node + arquivos gerados, sem ffmpeg).
 FROM node:22-alpine

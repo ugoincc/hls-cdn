@@ -4,3 +4,4 @@ results/**/*.jsonl
 *.ts
 *.m3u8
 .DS_Store
+services/origin/input.*

@@ -66,6 +66,25 @@ docker compose down
 Parâmetros do player: `session=<nome>` agrupa os eventos enviados ao router, `buffer=<s>` define
 o buffer à frente e `src=<url>` usa outra playlist.
 
+### Usar um vídeo próprio
+
+Por padrão o vídeo é sintético (barras coloridas e um bipe) e é gerado no build. Para usar outro:
+
+```bash
+cp ~/meu-video.mp4 services/origin/input.mp4
+```
+
+```bash
+docker compose up --build
+```
+
+Qualquer formato que o ffmpeg leia serve (`input.mp4`, `input.mov`, `input.mkv`…). O build usa os
+primeiros `VIDEO_DURATION` segundos (padrão: 180), converte para 24 fps nas três qualidades,
+mantém a proporção (com barras pretas se precisar) e gera silêncio se o vídeo não tiver áudio. O
+rótulo da qualidade e o relógio continuam sobrepostos à imagem, para a troca de qualidade ser
+visível na demo. Para voltar ao vídeo sintético, apague o arquivo e rode o build de novo. O arquivo
+está no `.gitignore` e não vai para o repositório.
+
 ## Componentes
 
 | serviço | código | papel |

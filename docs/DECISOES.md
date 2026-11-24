@@ -13,6 +13,9 @@ decisões do relatório.
 - **Por quê:** reprodutível sem rede externa e sem arquivos grandes no repositório; o rótulo
   torna a troca de qualidade do ABR visível para a plateia. Custo: build de ~1–2 min de encode
   (mais o download do ffmpeg na primeira vez).
+- **Opcional:** se existir `services/origin/input.*`, o mesmo pipeline usa esse vídeo como fonte
+  (mesma ladder, CBR e GOP; redimensionado com *letterbox*; silêncio se não houver áudio). O
+  sintético continua sendo o padrão, para manter o build reprodutível.
 
 ## D2. Ladder em CBR com keyframes alinhados a cada 2 s
 
