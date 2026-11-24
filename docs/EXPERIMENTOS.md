@@ -127,3 +127,22 @@ para os edges entraram na mesma fila do vídeo**: a fila do netem (1000 pacotes 
 registrou **6 mudanças de estado falsas** (edges saudáveis marcados DOWN). Lição: o plano de
 controle não pode dividir a fila com o plano de dados; corrigido limitando só o tráfego com
 porta de origem 8000 (`SPORT` em `scripts/chaos/netem.sh`).
+
+---
+
+## E4. Origem fora do ar
+
+**Como rodar (manual, ≈1 min):** com o cache aquecido, `scripts/chaos/origin-down.sh down`,
+pedir segmentos via router (`curl -sI localhost:8000/hls/720p/seg_003.ts`), depois
+`scripts/chaos/origin-down.sh up`. Resultado em `results/origin-down/`.
+
+| requisição durante a queda | resultado |
+|---|---|
+| segmento já em cache | **200 HIT em 8–9 ms**, como se nada tivesse acontecido |
+| segmento fora do cache / playlist | 502 após 2–6 s (router tenta os 3 edges) |
+| primeiro pedido após religar a origem | 200 MISS em 27 ms |
+| mudanças de estado falsas de edges no router | **0** (eram 1 por requisição antes de D11) |
+
+**Leitura:** o cache é o que mantém o serviço com a origem fora: o conteúdo popular (já
+aquecido) continua sendo entregue; o resto falha. O teste revelou uma **inversão de timeouts**
+(edge esperava a origem mais tempo que o router esperava o edge), corrigida em D11.

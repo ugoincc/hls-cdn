@@ -8,7 +8,13 @@ const PORT = Number(process.env.PORT ?? 8081);
 const EDGE_ID = process.env.EDGE_ID ?? `edge-${PORT}`;
 const ORIGIN_URL = (process.env.ORIGIN_URL ?? 'http://origin:8080').replace(/\/$/, '');
 const CACHE_MAX_MB = Number(process.env.CACHE_MAX_MB ?? 256);
-const ORIGIN_TIMEOUT_MS = Number(process.env.ORIGIN_TIMEOUT_MS ?? 5000);
+// Deve ser MENOR que o EDGE_TIMEOUT_MS do router (4000): senão o router desiste antes e culpa o
+// edge (saudável) por uma falha que é da origem.
+const ORIGIN_TIMEOUT_MS = Number(process.env.ORIGIN_TIMEOUT_MS ?? 2000);
+// Disjuntor: após uma falha de rede na origem, os MISS falham na hora por este tempo
+// (em vez de cada um esperar o timeout). A 1ª requisição depois do intervalo testa a origem.
+const ORIGIN_BREAKER_MS = Number(process.env.ORIGIN_BREAKER_MS ?? 3000);
+let originDownUntil = 0;
 
 const cache = new LRUCache(CACHE_MAX_MB * 1024 * 1024);
 const inflight = new Map(); // key -> Promise<entry>
@@ -18,8 +24,16 @@ const startedAt = Date.now();
 const log = (o) => process.stdout.write(JSON.stringify({ ts: Date.now(), service: 'edge', edge: EDGE_ID, ...o }) + '\n');
 
 async function fetchFromOrigin(key) {
+  if (Date.now() < originDownUntil) throw new Error('origin unavailable (breaker open)');
   const t0 = performance.now();
-  const r = await fetch(ORIGIN_URL + key, { signal: AbortSignal.timeout(ORIGIN_TIMEOUT_MS) });
+  let r;
+  try {
+    r = await fetch(ORIGIN_URL + key, { signal: AbortSignal.timeout(ORIGIN_TIMEOUT_MS) });
+  } catch (err) {
+    originDownUntil = Date.now() + ORIGIN_BREAKER_MS; // erro de rede/timeout → abre o disjuntor
+    throw err;
+  }
+  originDownUntil = 0;
   if (!r.ok) {
     const err = new Error(`origin status ${r.status}`);
     err.status = r.status;

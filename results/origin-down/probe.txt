@@ -1,0 +1,11 @@
+## cacheados (aquecidos antes da queda)
+seg_003.ts 200 edge=edge1 cache=HIT attempts=1 0.008158s
+seg_007.ts 200 edge=edge3 cache=HIT attempts=1 0.009429s
+## não cacheados
+seg_020.ts 502 edge= cache= attempts=3 6.014706s
+seg_050.ts 502 edge= cache= attempts=3 2.008429s
+seg_051.ts 502 edge= cache= attempts=3 6.012135s
+seg_052.ts 502 edge= cache= attempts=3 2.007261s
+## playlist (não cacheada)
+index.m3u8 502 edge= cache= attempts=3 2.008859s
+seg_050.ts 200 edge=edge3 cache=MISS attempts=1 0.026634s

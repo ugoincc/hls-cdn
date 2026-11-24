@@ -103,6 +103,35 @@ decisões do relatório.
 - **Por quê:** tempo de detecção = 1º evento de estado − t0; tempo de recuperação = 1ª resposta
   OK via failover − t0. Tudo na mesma máquina → relógios coerentes.
 
+## D10. Injeção de banda limitada só no tráfego ao cliente (plano de controle separado)
+
+- **Problema encontrado no experimento de ABR:** `tc netem rate 1500kbit` na interface inteira do
+  router pôs os health checks na mesma fila do vídeo. A fila do netem (1000 pacotes) a 1,5 Mbps
+  acumula segundos de espera (*bufferbloat*); os health checks estouraram o timeout de 500 ms e o
+  router marcou edges saudáveis como DOWN 6 vezes (`results/abr-sem-filtro/`).
+- **O quê:** `SPORT=8000 scripts/chaos/netem.sh router …` usa um qdisc `prio` com filtro `u32`
+  que aplica o netem só aos pacotes com porta de origem 8000 (respostas do router ao cliente).
+- **Alternativas:** aumentar o timeout do health check (mascara o problema e atrasa a detecção
+  real); limitar a banda no host/navegador (não reprodutível por script).
+- **Por quê:** simula o gargalo onde ele existe de fato (o "último quilômetro" do cliente) e
+  mantém o plano de controle fora da fila do plano de dados — 0 mudanças falsas depois.
+
+## D11. Hierarquia de timeouts + disjuntor da origem no edge
+
+- **Problema encontrado no cenário de origem fora do ar:** o edge esperava a origem por 5 s, mas
+  o router só esperava o edge por 4 s. O router desistia antes, culpava o edge (saudável) com
+  `SUSPECT` e tentava o próximo, que também esperava: 502 só após 8–12 s e um falso SUSPECT por
+  requisição.
+- **O quê:** `ORIGIN_TIMEOUT_MS` = 2000 no edge (< `EDGE_TIMEOUT_MS` = 4000 no router); após uma
+  falha de rede na origem, o edge abre um disjuntor por `ORIGIN_BREAKER_MS` (3 s) e responde 502 na
+  hora aos MISS seguintes. A 1ª requisição depois do intervalo volta a testar a origem.
+- **Por quê:** regra geral de sistemas em camadas — **o timeout de cada salto interno deve ser
+  menor que o do externo**; caso contrário, o nível de cima não distingue "o edge morreu" de "o edge
+  está esperando a origem". Com a correção, o edge devolve um 502 explícito (resposta, não
+  silêncio), o router trata como 5xx de edge vivo, e não há mudanças de estado falsas.
+- **Custo:** um MISS com a origem fora ainda leva 2–6 s porque o router tenta os 3 edges (algum
+  pode ter o segmento em cache); o disjuntor é por edge, não compartilhado.
+
 ## Limitações conhecidas
 
 - Router centralizado: gargalo de vazão (~300 req/s nesta máquina) e ponto único de falha.
