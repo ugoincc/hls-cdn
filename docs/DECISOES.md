@@ -132,6 +132,23 @@ decisões do relatório.
 - **Custo:** um MISS com a origem fora ainda leva 2–6 s porque o router tenta os 3 edges (algum
   pode ter o segmento em cache); o disjuntor é por edge, não compartilhado.
 
+## D12. Abortar requisições em andamento quando um edge sai de UP
+
+- **Problema encontrado no ensaio da demo:** um segmento que já estava sendo buscado no edge2 no
+  instante do `docker kill` levou **4047 ms** (2 tentativas). O IP do contêiner morto some, sem
+  RST, e a requisição ficou parada até o `EDGE_TIMEOUT_MS` (4 s), embora o router já tivesse marcado
+  o edge2 como DOWN ~2 s antes. O buffer do player absorveu, mas era um atraso evitável.
+- **O quê:** cada tentativa usa um `AbortController` registrado no edge (`edge.inflight`). Quando o
+  edge vai para `SUSPECT` ou `DOWN`, o router aborta todas as tentativas pendentes, e elas seguem
+  para o próximo do anel.
+- **Alternativas:** um timeout menor por tentativa (penaliza edges só lentos, ex.: com netem);
+  enviar a mesma requisição a dois edges ao mesmo tempo (*hedged requests*, que dobra a carga).
+- **Por quê:** a detecção passa a servir também às requisições que já estavam em andamento. Teste:
+  20 clientes a toda velocidade em 1080p com `docker kill edge2` no meio → 3852 requisições,
+  **0 erros**, a requisição com failover mais lenta levou **199 ms**, e as requisições pendentes
+  no edge2 foram abortadas e redirecionadas em 4–11 ms. Custo: um `SUSPECT` falso também aborta
+  transferências saudáveis, que vão para outro edge (MISS).
+
 ## Limitações conhecidas
 
 - Router centralizado: gargalo de vazão (~300 req/s nesta máquina) e ponto único de falha.

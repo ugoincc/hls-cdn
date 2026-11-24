@@ -32,7 +32,7 @@ const edges = new Map(
     .filter(Boolean)
     .map((s) => {
       const [id, url] = s.split(/=(.*)/s);
-      return [id, { id, url: url.replace(/\/$/, ''), state: 'UP', fails: 0, lastChange: Date.now(), healthMs: null, served: 0, failures: 0, checking: false }];
+      return [id, { id, url: url.replace(/\/$/, ''), state: 'UP', fails: 0, lastChange: Date.now(), healthMs: null, served: 0, failures: 0, checking: false, inflight: new Set() }];
     }),
 );
 const ring = new HashRing([...edges.keys()], VNODES);
@@ -52,6 +52,12 @@ function setState(edge, to, reason) {
   edge.lastChange = ev.ts;
   process.stdout.write(JSON.stringify(ev) + '\n');
   fs.appendFile(routerEventsFile, JSON.stringify(ev) + '\n', () => {});
+  // Requisições já em andamento para um edge que caiu ficariam presas até o EDGE_TIMEOUT_MS
+  // (nó morto = silêncio, sem RST). Abortá-las faz o failover acontecer já na detecção.
+  if (to !== 'UP') {
+    const reason = Object.assign(new Error(`edge ${to}`), { name: 'EdgeMarked' + to });
+    for (const ctl of edge.inflight) ctl.abort(reason);
+  }
 }
 
 // ---------- health check ativo ----------
@@ -90,9 +96,13 @@ async function proxy(req, res, key) {
   const tried = [];
   for (const edge of candidates) {
     const ta = performance.now();
+    const ctl = new AbortController();
+    edge.inflight.add(ctl);
     try {
-      const r = await fetch(edge.url + key, { signal: AbortSignal.timeout(EDGE_TIMEOUT_MS) });
+      const signal = AbortSignal.any([AbortSignal.timeout(EDGE_TIMEOUT_MS), ctl.signal]);
+      const r = await fetch(edge.url + key, { signal });
       const body = Buffer.from(await r.arrayBuffer());
+      edge.inflight.delete(ctl);
       if (r.status >= 500) {
         // edge vivo, mas não conseguiu servir (ex.: origem fora + MISS) → outro edge pode ter em cache
         tried.push({ edge: edge.id, status: r.status, ms: +(performance.now() - ta).toFixed(1) });
@@ -114,6 +124,7 @@ async function proxy(req, res, key) {
       log({ path: key, edge: edge.id, primary: primary.id, cache: r.headers.get('x-cache'), status: r.status, bytes: body.length, ms: +(performance.now() - t0).toFixed(1), attempts: tried.length + 1, failover, tried: tried.length ? tried : undefined });
       return;
     } catch (err) {
+      edge.inflight.delete(ctl);
       // erro de rede/timeout → suspeita passiva; o health check confirma (DOWN) ou absolve (UP)
       edge.failures++;
       if (edge.state === 'UP') setState(edge, 'SUSPECT', `request_fail: ${err.cause?.code ?? err.name}`);
